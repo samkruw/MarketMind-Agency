@@ -3046,11 +3046,16 @@ function populateFbClients(){
 extInit2();
 </script>
 
-<script type="module">
+<!-- Firebase SDKs (compat = globale Variablen, kein module nötig) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
+<script>
 // ═══════════════════════════════════════════════════════════
-//  FIREBASE  –  Auth + Firestore
-//  ⚠️  DEINE FIREBASE-KONFIGURATION HIER EINTRAGEN:
+//  FIREBASE KONFIGURATION
+//  ⚠️  HIER DEINE WERTE EINTRAGEN (Firebase Console →
+//     Projekteinstellungen → Deine Apps → Web → Config)
 // ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyDKquqF6FUYkQXx0xdjYgjXlDFEkz_lfJs",
@@ -3061,16 +3066,42 @@ const firebaseConfig = {
   appId: "1:352344619592:web:86767ed649d8c106ae767d"
 };
 
-// ── Firebase laden (CDN, kein npm nötig) ────────────────────
-import { initializeApp }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, onAuthStateChanged,
-         createUserWithEmailAndPassword,
-         signInWithEmailAndPassword, signOut,
-         updateProfile }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, collection,
-         setDoc, getDoc, getDocs, addDoc,
-         deleteDoc, onSnapshot, serverTimestamp,
-         query, orderBy }                          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+firebase.initializeApp(FB_CFG);
+const fbAuth = firebase.auth();
+const fbDb   = firebase.firestore();
+
+// ── Compat API Wrapper (gleiche Schnittstelle wie vorher) ──
+const serverTimestamp = () => firebase.firestore.FieldValue.serverTimestamp();
+
+let _uid = null;
+const uCol = (c) => fbDb.collection('users').doc(_uid).collection(c);
+const uDoc = (c, id) => fbDb.collection('users').doc(_uid).collection(c).doc(String(id));
+
+async function dbSave(col, id, data) {
+  await uDoc(col, id).set({ ...data, _upd: serverTimestamp() }, { merge: true });
+}
+async function dbDel(col, id) {
+  await uDoc(col, id).delete();
+}
+async function dbAll(col) {
+  try {
+    const snap = await uCol(col).orderBy('_upd','desc').get();
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  } catch {
+    const snap = await uCol(col).get();
+    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
+  }
+}
+function dbLive(col, cb) {
+  return uCol(col).onSnapshot(snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
+}
+async function dbProfile() {
+  const snap = await fbDb.collection('users').doc(_uid).get();
+  return snap.exists ? snap.data() : {};
+}
+async function dbSaveProfile(data) {
+  await fbDb.collection('users').doc(_uid).set(data, { merge: true });
+}
 
 const fbApp  = initializeApp(FB_CFG);
 const fbAuth = getAuth(fbApp);
@@ -3114,9 +3145,10 @@ async function doLogin() {
   if (!email || !pass) { showAuthErr('li','E-Mail und Passwort eingeben'); return; }
   ge('li-btn').disabled = true;
   try {
-    await signInWithEmailAndPassword(fbAuth, email, pass);
+    await fbAuth.signInWithEmailAndPassword(email, pass);
   } catch(e) {
-    const msg = e.code === 'auth/invalid-credential' ? 'E-Mail oder Passwort falsch' : e.message;
+    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'
+      ? 'E-Mail oder Passwort falsch' : e.message;
     showAuthErr('li', msg);
     ge('li-btn').disabled = false;
   }
@@ -3132,9 +3164,11 @@ async function doRegister() {
   if (pass.length < 6)       { showAuthErr('re','Passwort min. 6 Zeichen'); return; }
   ge('re-btn').disabled = true;
   try {
-    const cred = await createUserWithEmailAndPassword(fbAuth, email, pass);
-    await updateProfile(cred.user, { displayName: name });
-    await setDoc(doc(fbDb,'users',cred.user.uid), { name, email, createdAt: serverTimestamp() });
+    const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+    await fbDb.collection('users').doc(cred.user.uid).set({
+      name, email, createdAt: serverTimestamp()
+    });
   } catch(e) {
     const msg = e.code === 'auth/email-already-in-use' ? 'E-Mail bereits registriert' : e.message;
     showAuthErr('re', msg);
@@ -3145,7 +3179,7 @@ async function doRegister() {
 async function doLogout() {
   _unsubs.forEach(u => u());
   _unsubs = [];
-  await signOut(fbAuth);
+  await fbAuth.signOut();
   closeMo('mo-profile');
 }
 
@@ -3174,7 +3208,7 @@ function showLoading(on, msg='Laden…') {
 // ── AUTH STATE LISTENER ──────────────────────────────────────
 let _unsubs = [];
 
-onAuthStateChanged(fbAuth, async (user) => {
+fbAuth.onAuthStateChanged(async (user) => {
   if (user) {
     _uid = user.uid;
     ge('auth-screen').style.display = 'none';
