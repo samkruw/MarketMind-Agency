@@ -7,6 +7,10 @@
 <title>MarketMind Agency</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✦</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<!-- Firebase SDKs – müssen vor allem anderen geladen werden -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
 
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -3046,24 +3050,19 @@ function populateFbClients(){
 extInit2();
 </script>
 
-<!-- Firebase SDKs (compat = globale Variablen, kein module nötig) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
 <script>
 // ═══════════════════════════════════════════════════════════
 //  FIREBASE KONFIGURATION
 //  ⚠️  HIER DEINE WERTE EINTRAGEN (Firebase Console →
 //     Projekteinstellungen → Deine Apps → Web → Config)
 // ═══════════════════════════════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyDKquqF6FUYkQXx0xdjYgjXlDFEkz_lfJs",
-  authDomain: "marketmind-agency.firebaseapp.com",
-  projectId: "marketmind-agency",
-  storageBucket: "marketmind-agency.firebasestorage.app",
+const FB_CFG = {
+  apiKey:            "AIzaSyDKquqF6FUYkQXx0xdjYgjXlDFEkz_lfJs",
+  authDomain:        "marketmind-agency.firebaseapp.com",
+  projectId:         "marketmind-agency",
+  storageBucket:     "marketmind-agency.firebasestorage.app",
   messagingSenderId: "352344619592",
-  appId: "1:352344619592:web:86767ed649d8c106ae767d"
+  appId:             "1:352344619592:web:86767ed649d8c106ae767d"
 };
 
 firebase.initializeApp(FB_CFG);
@@ -3101,41 +3100,6 @@ async function dbProfile() {
 }
 async function dbSaveProfile(data) {
   await fbDb.collection('users').doc(_uid).set(data, { merge: true });
-}
-
-const fbApp  = initializeApp(FB_CFG);
-const fbAuth = getAuth(fbApp);
-const fbDb   = getFirestore(fbApp);
-
-let _uid = null;
-const uCol = (c) => collection(fbDb, 'users', _uid, c);
-const uDoc = (c, id) => doc(fbDb, 'users', _uid, c, id);
-
-// ── Firestore CRUD Wrapper ──────────────────────────────────
-async function dbSave(col, id, data) {
-  await setDoc(uDoc(col, String(id)), { ...data, _upd: serverTimestamp() }, { merge: true });
-}
-async function dbDel(col, id) {
-  await deleteDoc(uDoc(col, String(id)));
-}
-async function dbAll(col) {
-  try {
-    const snap = await getDocs(query(uCol(col), orderBy('_upd','desc')));
-    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
-  } catch {
-    const snap = await getDocs(uCol(col));
-    return snap.docs.map(d => ({ ...d.data(), id: d.id }));
-  }
-}
-function dbLive(col, cb) {
-  return onSnapshot(uCol(col), snap => cb(snap.docs.map(d => ({ ...d.data(), id: d.id }))));
-}
-async function dbProfile() {
-  const snap = await getDoc(doc(fbDb, 'users', _uid));
-  return snap.exists() ? snap.data() : {};
-}
-async function dbSaveProfile(data) {
-  await setDoc(doc(fbDb, 'users', _uid), data, { merge: true });
 }
 
 // ── AUTH FUNCTIONS ──────────────────────────────────────────
