@@ -625,8 +625,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
   <div class="sbhr"></div>
   <div class="sbh">KI-Tools</div>
   <button class="nb" onclick="gp('pg-schedule');nba(this)"><span class="ni">📆</span><span class="nl">Social Planer</span><span class="nnw">NEU</span></button>
-  <button class="nb" onclick="gp('pg-publish');nba(this)"><span class="ni">🌐</span><span class="nl">Web-Publish</span><span class="nnw">NEU</span></button>
+  <button class="nb" onclick="gp('pg-publish');nba(this)"><span class="ni">🌐</span><span class="nl">Web-Publish</span></button>
   <button class="nb" onclick="gp('pg-social');nba(this)"><span class="ni">📱</span><span class="nl">Social Posts</span></button>
+  <button class="nb" onclick="gp('pg-serie');nba(this)"><span class="ni">🎬</span><span class="nl">Post-Serie</span><span class="nnw">NEU</span></button>
   <button class="nb" onclick="gp('pg-img');nba(this)"><span class="ni">🎨</span><span class="nl">Bild-Studio</span></button>
   <button class="nb" onclick="gp('pg-seo');nba(this)"><span class="ni">🔎</span><span class="nl">SEO-Assistent</span><span class="nnw">NEU</span></button>
   <button class="nb" onclick="gp('pg-email');nba(this)"><span class="ni">✉️</span><span class="nl">E-Mail</span></button>
@@ -876,14 +877,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
             <button class="chip vi imgSt" onclick="sc2(this,'.imgSt')">Warm & gemütlich</button>
           </div>
         </div>
-        <div class="f" style="margin-bottom:12px"><label>Modell</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">
-            <div style="background:var(--s2);border:1px solid var(--a);border-radius:8px;padding:9px;cursor:pointer" class="imgMod on" onclick="selMod(this,'google/gemini-2.5-flash-image-preview')">
-              <div style="font-size:11px;font-weight:800">Gemini 2.5 Flash</div><div style="font-size:10px;color:var(--mu)">Free · Standard</div>
-            </div>
-            <div style="background:var(--s2);border:1px solid var(--l);border-radius:8px;padding:9px;cursor:pointer" class="imgMod" onclick="selMod(this,'google/gemini-2.5-flash-image-preview:thinking')">
-              <div style="font-size:11px;font-weight:800">Gemini 2.5 Thinking</div><div style="font-size:10px;color:var(--mu)">Free · Besser</div>
-            </div>
+        <div class="f" style="margin-bottom:12px">
+          <label>Modell</label>
+          <div style="background:var(--s2);border:1px solid var(--a);border-radius:8px;padding:10px;margin-top:4px">
+            <div style="font-size:12px;font-weight:800;color:var(--a)">FLUX.2 [klein] 4B</div>
+            <div style="font-size:11px;color:var(--mu);margin-top:2px">Black Forest Labs · Sub-Sekunden Generierung · ~$0.014/Bild</div>
           </div>
         </div>
         <div class="f" style="margin-bottom:12px"><label>Anzahl</label><select id="img-n"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
@@ -1398,6 +1396,128 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
   </div>
 </div>
 
+<!-- ════ POST-SERIE ════ -->
+<div id="pg-serie" class="pg">
+  <div class="ph">
+    <div class="phe">KI · Groq Llama 3.3</div>
+    <div class="pht">🎬 Post-<em>Serie</em></div>
+    <div class="phs">Erstelle mehrere zusammenhängende Posts mit rotem Faden – für Kampagnen, Storytelling, Produktlaunches oder Edukation.</div>
+  </div>
+
+  <div class="g2" style="align-items:start">
+    <!-- LEFT: Einstellungen -->
+    <div>
+      <div class="card">
+        <div class="ch">⚙️ Serie konfigurieren</div>
+
+        <div class="f" style="margin-bottom:10px">
+          <label>Thema / Kampagne</label>
+          <input type="text" id="sr-topic" placeholder="z.B. 5-teilige Tipps-Serie über Instagram-Wachstum">
+        </div>
+
+        <div class="g2" style="margin-bottom:10px">
+          <div class="f">
+            <label>Anzahl Posts</label>
+            <select id="sr-count">
+              <option value="3">3 Posts</option>
+              <option value="4">4 Posts</option>
+              <option value="5" selected>5 Posts</option>
+              <option value="7">7 Posts</option>
+              <option value="10">10 Posts</option>
+            </select>
+          </div>
+          <div class="f">
+            <label>Plattform</label>
+            <select id="sr-plat">
+              <option>Instagram</option>
+              <option>LinkedIn</option>
+              <option>Facebook</option>
+              <option>X/Twitter</option>
+              <option>TikTok</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="f" style="margin-bottom:10px">
+          <label>Serien-Format</label>
+          <div class="chips" style="margin-top:4px">
+            <button class="chip li on srFmt" onclick="sc2(this,'.srFmt')">📚 Tipps & Tricks</button>
+            <button class="chip li srFmt" onclick="sc2(this,'.srFmt')">📖 Storytelling</button>
+            <button class="chip li srFmt" onclick="sc2(this,'.srFmt')">🚀 Produkt-Launch</button>
+            <button class="chip li srFmt" onclick="sc2(this,'.srFmt')">❓ FAQ-Serie</button>
+            <button class="chip li srFmt" onclick="sc2(this,'.srFmt')">🎯 Vorher/Nachher</button>
+            <button class="chip li srFmt" onclick="sc2(this,'.srFmt')">📅 Event-Countdown</button>
+          </div>
+        </div>
+
+        <div class="g2" style="margin-bottom:10px">
+          <div class="f">
+            <label>Ton</label>
+            <select id="sr-tone">
+              <option>Professionell</option>
+              <option>Freundlich & locker</option>
+              <option>Inspirierend</option>
+              <option>Humorvoll</option>
+              <option>Autoritativ</option>
+            </select>
+          </div>
+          <div class="f">
+            <label>Kunde (optional)</label>
+            <select id="sr-client"><option value="">Eigenes Business</option></select>
+          </div>
+        </div>
+
+        <div class="f" style="margin-bottom:10px">
+          <label>Zielgruppe</label>
+          <input type="text" id="sr-aud" placeholder="z.B. KMU-Inhaber in der Schweiz, 30–50 Jahre">
+        </div>
+
+        <div class="f" style="margin-bottom:10px">
+          <label>Optionen</label>
+          <div class="chips" style="margin-top:4px">
+            <button class="chip te on srOpt" onclick="tc(this)" data-opt="hashtags">#️⃣ Hashtags</button>
+            <button class="chip te on srOpt" onclick="tc(this)" data-opt="cta">📢 CTA je Post</button>
+            <button class="chip te srOpt" onclick="tc(this)" data-opt="images">🎨 Bild-Prompts</button>
+            <button class="chip te srOpt" onclick="tc(this)" data-opt="schedule">📅 Posting-Plan</button>
+          </div>
+        </div>
+
+        <div class="f" style="margin-bottom:14px">
+          <label>Zusatzinfos</label>
+          <textarea id="sr-extra" placeholder="z.B. Produkt XY, Aktion läuft bis Ende Monat, USP ist..." style="min-height:55px"></textarea>
+        </div>
+
+        <button class="bp fw" id="sr-btn" onclick="genSerie()">
+          <span class="spin" id="sr-sp"></span>🎬 Serie generieren
+        </button>
+      </div>
+
+      <!-- SERIEN-VORLAGEN -->
+      <div class="card">
+        <div class="ch">⚡ Schnell-Vorlagen</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <button class="bs" style="justify-content:flex-start;text-align:left" onclick="fillSerie('5 Social-Media-Tipps für mehr Reichweite','5','Instagram','📚 Tipps & Tricks')">📸 5 Instagram-Tipps-Serie</button>
+          <button class="bs" style="justify-content:flex-start;text-align:left" onclick="fillSerie('Produkt-Launch Ankündigung und Vorstellung','5','Instagram','🚀 Produkt-Launch')">🚀 Produkt-Launch (5 Posts)</button>
+          <button class="bs" style="justify-content:flex-start;text-align:left" onclick="fillSerie('Unternehmensgründung und unsere Geschichte','3','LinkedIn','📖 Storytelling')">💼 LinkedIn-Story (3 Posts)</button>
+          <button class="bs" style="justify-content:flex-start;text-align:left" onclick="fillSerie('Häufige Fragen zu unseren Dienstleistungen','5','Instagram','❓ FAQ-Serie')">❓ FAQ-Serie (5 Posts)</button>
+          <button class="bs" style="justify-content:flex-start;text-align:left" onclick="fillSerie('Event-Countdown und Vorfreude aufbauen','7','Instagram','📅 Event-Countdown')">🎪 Event-Countdown (7 Tage)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Output -->
+    <div>
+      <div id="sr-prog" class="prog"><div class="progi"></div></div>
+      <div id="sr-out">
+        <div class="empty" style="padding:60px 20px">
+          <div class="empty-ico">🎬</div>
+          <div class="empty-txt">Serie konfigurieren und generieren.<br>Alle Posts erscheinen hier mit Vorschau.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- MODALS -->
@@ -1405,18 +1525,28 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;heigh
   <div class="mo">
     <button class="mc" onclick="closeMo('mo-keys')">✕</button>
     <div class="mot">API Keys</div>
-    <div class="mos">Werden nur lokal gespeichert – nie auf einem Server.</div>
-    <div style="margin-bottom:12px">
+    <div class="mos">Nur lokal gespeichert – nie auf einem Server.</div>
+    <div style="margin-bottom:14px">
       <div style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:var(--ag);color:var(--a);display:inline-block;margin-bottom:6px">GROQ · Texte & Workflows</div>
-      <label style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:5px">Groq API Key (kostenlos)</label>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--mu)">Groq API Key</label>
+        <span style="display:flex;align-items:center;gap:4px"><div class="dot" id="groq-dot"></div><span style="font-size:11px;color:var(--mu)" id="groq-st">–</span></span>
+      </div>
       <input type="text" id="key-groq" placeholder="gsk_...">
       <a href="https://console.groq.com/keys" target="_blank" style="font-size:11px;color:var(--b);text-decoration:none;display:inline-block;margin-top:4px">→ console.groq.com (kostenlos)</a>
     </div>
     <div style="margin-bottom:16px">
-      <div style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:var(--bg3);color:var(--b);display:inline-block;margin-bottom:6px">OPENROUTER · Bilder</div>
-      <label style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--mu);display:block;margin-bottom:5px">OpenRouter API Key (kostenlos)</label>
-      <input type="text" id="key-or" placeholder="sk-or-...">
-      <a href="https://openrouter.ai/keys" target="_blank" style="font-size:11px;color:var(--b);text-decoration:none;display:inline-block;margin-top:4px">→ openrouter.ai (kostenlos)</a>
+      <div style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:rgba(124,111,255,.15);color:var(--b);display:inline-block;margin-bottom:6px">OPENROUTER · FLUX.2 Klein 4B · Bilder</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label style="font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--mu)">OpenRouter Key (nur Bilder)</label>
+        <span style="display:flex;align-items:center;gap:4px"><div class="dot" id="flux-dot"></div><span style="font-size:11px;color:var(--mu)" id="flux-st">–</span></span>
+      </div>
+      <input type="text" id="key-fx" placeholder="sk-or-...">
+      <a href="https://openrouter.ai/settings/keys" target="_blank" style="font-size:11px;color:var(--b);text-decoration:none;display:inline-block;margin-top:4px">→ openrouter.ai/settings/keys</a>
+      <div style="font-size:11px;color:var(--mu);margin-top:5px;padding:8px;background:var(--s2);border-radius:7px;line-height:1.5">
+        ℹ️ Modell: <strong style="color:var(--tx)">FLUX.2 [klein] 4B</strong> via OpenRouter<br>
+        Kosten: ~$0.014/Bild · Guthaben auf openrouter.ai aufladen
+      </div>
     </div>
     <div style="display:flex;gap:7px"><button class="bp fw" onclick="saveKeys()">💾 Speichern</button><button class="bs" onclick="closeMo('mo-keys')">Abbrechen</button></div>
   </div>
@@ -1508,14 +1638,15 @@ let brand    = JSON.parse(localStorage.getItem('mma_br') || '{}');
 let stats    = JSON.parse(localStorage.getItem('mma_st') || '{"posts":0,"imgs":0,"wf":0}');
 let clients  = JSON.parse(localStorage.getItem('mma_cl') || '[]');
 let camps    = JSON.parse(localStorage.getItem('mma_ca') || '[]');
-let selIM    = 'google/gemini-2.5-flash-image-preview';
+let selIM    = 'black-forest-labs/flux.2-klein-4b';
 let activeCl = null;
 
 const GROQ_URL  = 'https://api.groq.com/openai/v1/chat/completions';
 const OR_URL    = 'https://openrouter.ai/api/v1/chat/completions';
 const GROQ_MOD  = 'llama-3.3-70b-versatile';
-const gKey = () => localStorage.getItem('mma_gk') || '';
-const oKey = () => localStorage.getItem('mma_ok') || '';
+const gKey  = () => localStorage.getItem('mma_gk') || '';
+const oKey  = () => localStorage.getItem('mma_ok') || '';
+const fxKey = () => localStorage.getItem('mma_fk') || '';  // FLUX Key (nur für Bilder)
 
 // ═══════════════════════════════════
 //  HELPERS
@@ -1554,23 +1685,28 @@ function hnav(el,pg){document.querySelectorAll('.ht').forEach(t=>t.classList.rem
 //  KEYS & STATUS
 // ═══════════════════════════════════
 function saveKeys(){
-  const g=vl('key-groq'),o=vl('key-or');
+  const g=vl('key-groq'),o=vl('key-or'),f=vl('key-fx');
   if(g)localStorage.setItem('mma_gk',g);
   if(o)localStorage.setItem('mma_ok',o);
+  if(f)localStorage.setItem('mma_fk',f);
   updStatus();closeMo('mo-keys');toast('✅ Keys gespeichert!');
 }
 function updStatus(){
-  const g=gKey(),o=oKey();
-  const gOk=g.length>10,oOk=o.length>10;
-  ['api-dot'].forEach(id=>{const d=ge(id);if(d){d.className='dot '+(gOk&&oOk?'don':'doff')}});
-  ge('api-lbl').textContent=(gOk&&oOk)?'Keys aktiv':'API Keys';
-  const gd=ge('groq-dot');if(gd){gd.className='dot '+(gOk?'don':'doff')}
-  const od=ge('or-dot');if(od){od.className='dot '+(oOk?'don':'doff')}
-  if(ge('groq-st'))ge('groq-st').textContent=gOk?'Aktiv':'Kein Key';
-  if(ge('or-st'))ge('or-st').textContent=oOk?'Aktiv':'Kein Key';
+  const g=gKey(),fk=fxKey();
+  const gOk=g.length>10,fOk=fk.length>10;
+  const dot=ge('api-dot');if(dot)dot.className='dot '+(gOk?'don':'doff');
+  const lbl=ge('api-lbl');if(lbl)lbl.textContent=gOk?'Keys aktiv':'API Keys';
+  const gd=ge('groq-dot');if(gd)gd.className='dot '+(gOk?'don':'doff');
+  const fd=ge('flux-dot');if(fd)fd.className='dot '+(fOk?'don':'doff');
+  if(ge('groq-st'))ge('groq-st').textContent=gOk?'✅ Aktiv':'❌ Kein Key';
+  if(ge('flux-st'))ge('flux-st').textContent=fOk?'✅ Aktiv':'❌ Kein Key';
 }
 function openMo(id){
-  if(id==='mo-keys'){ge('key-groq').value=gKey();ge('key-or').value=oKey();}
+  if(id==='mo-keys'){
+    ge('key-groq').value=gKey();
+    const ok=ge('key-or');if(ok)ok.value=oKey();
+    const fk=ge('key-fx');if(fk)fk.value=fxKey();
+  }
   ge(id).classList.add('open');
 }
 function closeMo(id){ge(id).classList.remove('open')}
@@ -1587,70 +1723,48 @@ async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent 
 }
 
 async function callORImg(prompt){
-  const k=oKey();if(!k)throw new Error('OpenRouter Key fehlt – bitte in API Keys eintragen');
+  const k = fxKey();
+  if(!k){ openMo('mo-keys'); throw new Error('FLUX Key fehlt – bitte in API Keys eintragen'); }
 
-  // Gemini Image Modelle brauchen modalities:["image","text"]
-  // Flux/andere nur modalities:["image"]
-  const isGemini = selIM.includes('gemini');
-  const modalities = isGemini ? ['image','text'] : ['image'];
-
-  const r=await fetch(OR_URL,{method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'Authorization':'Bearer '+k,
-      'HTTP-Referer':'https://samkruw.github.io/marketmind-agency/',
-      'X-Title':'MarketMind Agency'
+  // FLUX.2 Klein via OpenRouter — modalities:["image"] → Base64 zurück
+  const r = await fetch(OR_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': 'Bearer ' + k,
+      'HTTP-Referer':  'https://samkruw.github.io/marketmind-agency/',
+      'X-Title':       'MarketMind Agency'
     },
-    body:JSON.stringify({
-      model:selIM,
-      messages:[{role:'user',content:prompt}],
-      modalities:modalities
+    body: JSON.stringify({
+      model:      'black-forest-labs/flux.2-klein-4b',
+      messages:   [{ role:'user', content: prompt }],
+      modalities: ['image']
     })
   });
 
   if(!r.ok){
-    const e=await r.json().catch(()=>({}));
-    throw new Error(e.error?.message||'OpenRouter Fehler '+r.status);
+    const e = await r.json().catch(()=>({}));
+    throw new Error(e.error?.message || 'OpenRouter Fehler ' + r.status);
   }
 
-  const d=await r.json();
-  const imgs=[];
+  const d = await r.json();
+  const imgs = [];
 
-  // Content kann Array oder String sein
-  const c=d.choices?.[0]?.message?.content;
-
+  // FLUX via OpenRouter gibt Base64 im content-Array zurück
+  const c = d.choices?.[0]?.message?.content;
   if(Array.isArray(c)){
-    c.forEach(b=>{
-      if(b.type==='image_url'){
-        const url=b.image_url?.url||b.image_url;
+    c.forEach(b => {
+      if(b.type === 'image_url'){
+        const url = b.image_url?.url || b.image_url;
         if(url) imgs.push(url);
-      }
-      if(b.type==='text'&&b.text){
-        // Base64 direkt
-        if(b.text.startsWith('data:image')) imgs.push(b.text.trim());
-        // Nur base64 ohne prefix
-        if(b.text.length>100&&/^[A-Za-z0-9+/]+=*$/.test(b.text.trim())){
-          imgs.push('data:image/png;base64,'+b.text.trim());
-        }
       }
     });
   }
+  // Manchmal als direkter String
+  if(typeof c === 'string' && c.startsWith('data:image')) imgs.push(c);
+  if(typeof c === 'string' && c.startsWith('http'))       imgs.push(c);
 
-  if(typeof c==='string'){
-    if(c.startsWith('data:image')) imgs.push(c);
-    else if(c.startsWith('http')) imgs.push(c);
-    else if(c.length>100) imgs.push('data:image/png;base64,'+c.trim());
-  }
-
-  // Fallback für andere Formate
-  if(!imgs.length){
-    const mi=d.choices?.[0]?.message?.images;
-    if(mi?.length) mi.forEach(i=>imgs.push(i));
-  }
-  if(!imgs.length&&d.data?.[0]?.url)         imgs.push(d.data[0].url);
-  if(!imgs.length&&d.data?.[0]?.b64_json)    imgs.push('data:image/png;base64,'+d.data[0].b64_json);
-
-  if(!imgs.length) throw new Error('Kein Bild im Response – Modell hat kein Bild generiert');
+  if(!imgs.length) throw new Error('Kein Bild erhalten. Prüfe deinen FLUX Key auf openrouter.ai');
   return imgs;
 }
 
@@ -3124,12 +3238,12 @@ function extInit2(){
   populateFbClients();
   renderFeedbackList();
   renderFeedbackProfile();
-  // Patch client save to also update autopilot dropdown
   const origSave = window.saveClient || function(){};
   window.saveClient = function(){
     origSave();
     populateAutopilotClients();
     populateFbClients();
+    populateSerieClients();
   };
 }
 
@@ -3139,7 +3253,215 @@ function populateFbClients(){
     clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 
-extInit2();
+// ═══════════════════════════════════════════════════════════
+//  POST-SERIE
+// ═══════════════════════════════════════════════════════════
+function fillSerie(topic, count, plat, fmt) {
+  ge('sr-topic').value = topic;
+  ge('sr-count').value = count;
+  ge('sr-plat').value  = plat;
+  // Set format chip
+  document.querySelectorAll('.srFmt').forEach(c => {
+    c.classList.toggle('on', c.textContent.trim() === fmt);
+  });
+  gp('pg-serie');
+  toast('✨ Vorlage geladen!');
+}
+
+async function genSerie() {
+  const topic  = vl('sr-topic');
+  if (!topic) { toast('Thema eingeben', true); return; }
+
+  const count  = parseInt(vl('sr-count')) || 5;
+  const plat   = vl('sr-plat');
+  const fmt    = qs('.srFmt.on')?.textContent.trim() || 'Tipps & Tricks';
+  const tone   = vl('sr-tone');
+  const aud    = vl('sr-aud');
+  const extra  = vl('sr-extra');
+  const opts   = [...document.querySelectorAll('.srOpt.on')].map(c => c.dataset.opt);
+  const withHt = opts.includes('hashtags');
+  const withCta= opts.includes('cta');
+  const withImg= opts.includes('images');
+  const withSch= opts.includes('schedule');
+  const clId   = ge('sr-client')?.value || null;
+  const cl     = clients.find(c => c.id === clId);
+
+  ge('sr-btn').disabled = true;
+  ge('sr-sp').style.display = 'inline-block';
+  ge('sr-prog').style.display = 'block';
+  ge('sr-out').innerHTML = '';
+
+  const ctx = bCtx() + (cl ? `\nKunde: ${cl.name} | ${cl.industry||''} | ${cl.notes?.substring(0,120)||''}` : '');
+
+  const prompt = `Erstelle eine zusammenhängende ${count}-teilige ${fmt}-Serie für ${plat}.
+
+Thema: ${topic}
+Format: ${fmt}
+Ton: ${tone}
+Zielgruppe: ${aud || 'allgemein'}
+${extra ? 'Zusatz: ' + extra : ''}
+${ctx}
+
+WICHTIG: Alle Posts sollen einen klaren roten Faden haben und aufeinander aufbauen.
+${withCta ? 'Jeder Post soll einen passenden Call-to-Action haben.' : ''}
+${withHt  ? 'Jeder Post soll 5-8 passende Hashtags haben.' : ''}
+${withImg ? 'Jeder Post soll einen englischen Bild-Prompt haben.' : ''}
+
+Antworte NUR mit JSON (kein Text davor/danach):
+{
+  "series_title": "Titel der Serie",
+  "series_hook": "Ankündigungstext für den ersten Post",
+  "posts": [
+    {
+      "nr": 1,
+      "title": "Post-Titel",
+      "caption": "Vollständige Caption mit Emojis",
+      "hashtags": "#tag1 #tag2 ...",
+      "cta": "Call-to-Action Text",
+      "image_prompt": "English detailed prompt for marketing image",
+      "posting_day": "Tag 1 – Montag"
+    }
+  ]
+}`;
+
+  try {
+    const raw  = await callGroq(prompt, 'Du bist ein Social-Media-Experte. Antworte NUR mit JSON.', 3000);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const data  = JSON.parse(clean);
+
+    renderSerie(data, { plat, withHt, withCta, withImg, withSch, topic });
+    incStat('posts', data.posts?.length || 0);
+    toast(`🎬 ${data.posts?.length || 0}-teilige Serie erstellt!`);
+  } catch(e) {
+    ge('sr-out').innerHTML = `<div class="card"><div style="color:var(--er)">❌ ${e.message}</div></div>`;
+    toast('❌ ' + e.message, true);
+  }
+
+  ge('sr-btn').disabled = false;
+  ge('sr-sp').style.display = 'none';
+  ge('sr-prog').style.display = 'none';
+}
+
+function renderSerie(data, opts) {
+  const { plat, withHt, withCta, withImg, withSch, topic } = opts;
+  const out = ge('sr-out');
+  const posts = data.posts || [];
+
+  // Alles als Text für Export
+  const allTxt = posts.map(p =>
+    `=== POST ${p.nr}: ${p.title} ===\n${p.caption}${p.hashtags?'\n\n'+p.hashtags:''}${p.cta?'\n\nCTA: '+p.cta:''}`
+  ).join('\n\n---\n\n');
+  const allE = allTxt.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+  const titleE = (data.series_title||topic).replace(/'/g,"\\'");
+
+  let html = `
+    <!-- SERIE HEADER -->
+    <div style="background:linear-gradient(135deg,var(--ag),var(--bg3));border:1px solid rgba(200,241,53,.2);border-radius:14px;padding:18px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--a);margin-bottom:5px">🎬 POST-SERIE · ${plat} · ${posts.length} Posts</div>
+          <div style="font-size:18px;font-weight:800;color:var(--tx)">${data.series_title || topic}</div>
+          ${data.series_hook ? `<div style="font-size:12px;color:var(--tx2);margin-top:5px;line-height:1.5">${data.series_hook}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:7px;flex-shrink:0">
+          <button class="bs" onclick="copyText('${allE}')">📋 Alle kopieren</button>
+          <button class="bs" onclick="saveItem('Serie: ${titleE}','${allE}')">⭐ Speichern</button>
+          <button class="bs" onclick="exportSerie()">📤 Export</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSTING PLAN -->
+    ${withSch && posts.some(p => p.posting_day) ? `
+    <div class="card" style="margin-bottom:14px">
+      <div class="ch">📅 Posting-Plan</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px">
+        ${posts.map(p => `
+          <div style="background:var(--s2);border:1px solid var(--l);border-radius:9px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-weight:800;color:var(--a);margin-bottom:3px">${p.posting_day || 'Tag ' + p.nr}</div>
+            <div style="font-size:11px;font-weight:700;color:var(--tx);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${p.title}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <!-- POSTS -->
+    <div style="display:flex;flex-direction:column;gap:12px">`;
+
+  posts.forEach((p, i) => {
+    const capE = (p.caption||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+    const htE  = (p.hashtags||'').replace(/'/g,"\\'");
+    const fullE = (p.caption + (p.hashtags?'\n\n'+p.hashtags:'') + (p.cta?'\n\nCTA: '+p.cta:'')).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+    const titleE2 = (p.title||'Post '+p.nr).replace(/'/g,"\\'");
+
+    html += `
+      <div class="rc" style="animation:ci .35s ${i*.06}s var(--ease) both">
+        <!-- POST HEADER -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#04040c;flex-shrink:0">${p.nr}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title || 'Post ' + p.nr}</div>
+            <div style="font-size:10px;color:var(--mu)">${plat}${p.posting_day ? ' · ' + p.posting_day : ''}</div>
+          </div>
+          <div class="ra">
+            <button class="bg" onclick="copyText('${fullE}')" title="Alles kopieren">📋</button>
+            <button class="bg" onclick="saveItem('Post ${p.nr}: ${titleE2}','${fullE}')" title="Speichern">⭐</button>
+            ${withImg && p.image_prompt ? `<button class="bg" onclick="ge('img-p').value='${(p.image_prompt||'').replace(/'/g,"\\'")}';gp('pg-img');nba(document.querySelectorAll('.nb')[5])" title="Bild generieren">🎨</button>` : ''}
+          </div>
+        </div>
+
+        <!-- CAPTION -->
+        <div style="background:var(--s2);border:1px solid var(--l);border-radius:9px;padding:12px;margin-bottom:8px">
+          <div style="font-size:12px;line-height:1.75;color:var(--tx);white-space:pre-wrap">${p.caption || ''}</div>
+        </div>
+
+        <!-- HASHTAGS -->
+        ${withHt && p.hashtags ? `
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">
+          ${(p.hashtags.match(/#\S+/g)||[]).map(t => `<span class="ht2" onclick="copyText('${t}')">${t}</span>`).join('')}
+        </div>` : ''}
+
+        <!-- CTA -->
+        ${withCta && p.cta ? `
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--ag);border:1px solid rgba(200,241,53,.2);border-radius:8px;margin-bottom:8px">
+          <span style="font-size:13px">📢</span>
+          <span style="font-size:12px;font-weight:700;color:var(--a)">${p.cta}</span>
+        </div>` : ''}
+
+        <!-- BILD PROMPT -->
+        ${withImg && p.image_prompt ? `
+        <div style="padding:9px 12px;background:var(--bg3);border:1px solid rgba(124,111,255,.2);border-radius:8px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--b);margin-bottom:4px">🎨 BILD-PROMPT</div>
+          <div style="font-size:11px;color:var(--tx2);font-style:italic">${p.image_prompt}</div>
+        </div>` : ''}
+      </div>`;
+  });
+
+  html += `</div>`;
+  out.innerHTML = html;
+
+  // Serien-Export Funktion
+  window._lastSerie = { data, opts, allTxt };
+}
+
+function exportSerie() {
+  if (!window._lastSerie) { toast('Erst generieren', true); return; }
+  const { data, opts, allTxt } = window._lastSerie;
+  const blob = new Blob([allTxt], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (data.series_title || 'post-serie').replace(/\s+/g, '-').toLowerCase() + '.txt';
+  a.click();
+  toast('📤 Serie exportiert!');
+}
+
+// Populate sr-client select
+function populateSerieClients() {
+  const s = ge('sr-client'); if (!s) return;
+  const v = s.value;
+  s.innerHTML = '<option value="">Eigenes Business</option>' +
+    clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if (v) s.value = v;
+}
 </script>
 
 <script>
@@ -3481,6 +3803,13 @@ window.incStat = async function(k, n=1) {
   if(_uid) await dbSaveProfile({ stats }).catch(()=>{});
   else svLS('mma_st',stats);
   updStats();
+};
+
+// Patch loadAllFromFirebase to also populate serie clients
+const _origLoadAll = window.loadAllFromFirebase;
+window.loadAllFromFirebase = async function() {
+  if(_origLoadAll) await _origLoadAll();
+  if(typeof populateSerieClients === 'function') populateSerieClients();
 };
 
 </script>
