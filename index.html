@@ -1766,19 +1766,9 @@ async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent 
 
 async function callORImg(prompt){
   // Pollinations.AI — 100% kostenlos, kein API Key nötig
-  // Einfach Prompt in URL einbauen → Bild zurück als direkte URL
   const encoded = encodeURIComponent(prompt.substring(0, 500));
   const seed    = Math.floor(Math.random() * 999999);
   const url     = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&model=flux&nologo=true&seed=${seed}`;
-
-  // Bild vorladen um sicherzustellen dass es funktioniert
-  await new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload  = resolve;
-    img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
-    img.src = url;
-  });
-
   return [url];
 }
 
@@ -2319,42 +2309,57 @@ async function genSocial(){
 }
 
 // Generiert ein Bild inline in einen Container
+// Hilfsfunktion: Bild-HTML mit Spinner
+function makeImgHtml(url, label) {
+  const id = 'img-' + Math.random().toString(36).slice(2,7);
+  return `<div style="position:relative;background:var(--s2);border-radius:9px;overflow:hidden">
+    <div id="${id}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:1;pointer-events:none">
+      <div class="spin" style="width:20px;height:20px;border-width:3px;display:block!important;border-color:rgba(200,241,53,.15);border-top-color:var(--a)"></div>
+      <div style="font-size:10px;color:var(--mu)">Lädt…</div>
+    </div>
+    <img src="${url}" crossorigin="anonymous" style="width:100%;display:block;position:relative;z-index:2;min-height:60px"
+      onload="const s=document.getElementById('${id}');if(s)s.remove()"
+      onerror="const s=document.getElementById('${id}');if(s){s.innerHTML='<div style=font-size:11px;color:var(--mu);padding:16px>⚠️ Lädt noch… <a href=${url} target=_blank style=color:var(--a)>Direkt öffnen</a></div>'}"
+      alt="${label||'KI Bild'}">
+    <a href="${url}" target="_blank" download style="position:absolute;top:7px;right:7px;z-index:3;font-size:10px;font-weight:800;padding:4px 9px;background:rgba(4,4,12,.8);color:#fff;text-decoration:none;border-radius:6px;border:1px solid rgba(255,255,255,.15)">💾</a>
+  </div>`;
+}
+
 async function genInlineImg(containerId, prompt) {
   const el = ge(containerId); if(!el) return;
   try {
-    const imgs = await callORImg(prompt + '. Photorealistic, professional marketing photo, high quality.');
+    const imgs = await callORImg(prompt + '. Photorealistic, professional marketing photo.');
     if(imgs[0]) {
-      el.style.minHeight = '';
-      el.innerHTML = `<div style="position:relative">
-        <img src="${imgs[0]}" style="width:100%;display:block" alt="KI Bild">
-        <a href="${imgs[0]}" download="bild.png" style="position:absolute;top:6px;right:6px;font-size:10px;font-weight:800;padding:3px 8px;background:rgba(4,4,12,.75);color:#fff;text-decoration:none;border-radius:6px;border:1px solid rgba(255,255,255,.2)">💾</a>
-      </div>`;
-      incStat('imgs',1);
+      el.innerHTML = makeImgHtml(imgs[0], 'KI Bild');
+      incStat('imgs', 1);
     }
   } catch(e) {
-    el.innerHTML = `<div style="font-size:10px;color:var(--mu);padding:8px;text-align:center">❌ ${e.message.substring(0,60)}</div>`;
+    el.innerHTML = `<div style="font-size:10px;color:var(--mu);padding:8px;text-align:center">❌ ${e.message.substring(0,80)}</div>`;
   }
 }
 
 async function genImg(){
-  const pr=vl('img-p'),cnt=parseInt(vl('img-n'));
+  const pr=vl('img-p'), cnt=parseInt(vl('img-n'))||1;
   if(!pr){toast('⚠️ Prompt eingeben',true);return;}
   const sm={'Fotorealistisch':'photorealistic professional photography','Illustration':'digital illustration vibrant','Minimalistisch':'minimalist clean white background','Warm & gemütlich':'warm cozy soft lighting'};
   const full=`${pr}. Style: ${sm[qs('.imgSt.on')?.textContent]||'photorealistic'}. Marketing quality, high resolution.`;
   load('img-prog','img-btn','img-sp',true);
-  const out=ge('img-out');out.innerHTML='';
-  for(let i=0;i<cnt;i++){
-    const ph=document.createElement('div');ph.id=`iph-${i}`;
-    ph.style.cssText='border-radius:10px;overflow:hidden;border:1px solid var(--l);background:var(--s)';
-    ph.innerHTML=`<div style="width:100%;aspect-ratio:1;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px"><div class="spin" style="width:22px;height:22px;border-width:3px;display:block!important;border-color:rgba(200,241,53,.2);border-top-color:var(--a)"></div><div style="font-size:11px;color:var(--mu)">Generiert…</div></div>`;
-    out.appendChild(ph);
-  }
+  const out=ge('img-out'); out.innerHTML='';
   let ok=0;
   for(let i=0;i<cnt;i++){
     try{
-      const imgs=await callORImg(full);const ph=ge(`iph-${i}`);
-      if(imgs[0]){ph.innerHTML=`<img src="${imgs[0]}" style="width:100%;display:block" alt="KI Bild"><div style="padding:8px;display:flex;gap:5px"><span style="flex:1;font-size:10px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pr}</span><a href="${imgs[0]}" download="bild.png" class="bg">💾</a></div>`;ok++;}
-    }catch(e){ge(`iph-${i}`).innerHTML=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:10px;text-align:center;padding:16px"><div style="font-size:12px;color:var(--mu)">❌ ${e.message}</div></div>`;}
+      const imgs=await callORImg(full);
+      if(imgs[0]){
+        const d=document.createElement('div');
+        d.innerHTML=makeImgHtml(imgs[0], pr);
+        out.appendChild(d);
+        ok++;
+      }
+    }catch(e){
+      const d=document.createElement('div');
+      d.innerHTML=`<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:10px;text-align:center;padding:16px"><div style="font-size:12px;color:var(--mu)">❌ ${e.message}</div></div>`;
+      out.appendChild(d);
+    }
   }
   ge('img-cnt-lbl').textContent=ok+' Bild'+(ok!==1?'er':'');
   if(ok>0){incStat('imgs',ok);toast('🎨 '+ok+' generiert!');}
@@ -3514,13 +3519,7 @@ async function genImgForPost(nr, prompt) {
   try {
     const imgs = await callORImg(prompt + '. Professional marketing photo, high quality.');
     if (imgs[0]) {
-      container.innerHTML = `
-        <div style="position:relative">
-          <img src="${imgs[0]}" style="width:100%;display:block;border-radius:10px" alt="KI Bild Post ${nr}">
-          <div style="position:absolute;top:8px;right:8px;display:flex;gap:5px">
-            <a href="${imgs[0]}" download="post-${nr}.png" class="bg" style="font-size:10px;padding:4px 8px;background:rgba(4,4,12,.75);border-color:rgba(255,255,255,.2);color:#fff;text-decoration:none">💾</a>
-          </div>
-        </div>`;
+      container.innerHTML = makeImgHtml(imgs[0], 'Post ' + nr);
       incStat('imgs', 1);
     }
   } catch(e) {
