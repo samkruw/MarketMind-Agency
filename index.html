@@ -1756,10 +1756,10 @@ async function testFluxKey(){
 // ═══════════════════════════════════
 //  API
 // ═══════════════════════════════════
-async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent für deutschsprachige KMUs. Antworte auf Deutsch.'){
+async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent für deutschsprachige KMUs. Antworte auf Deutsch.',maxTok=1500){
   const k=gKey();if(!k){openMo('mo-keys');throw new Error('Groq Key fehlt')}
   const r=await fetch(GROQ_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
-    body:JSON.stringify({model:GROQ_MOD,max_tokens:1500,messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});
+    body:JSON.stringify({model:GROQ_MOD,max_tokens:maxTok,messages:[{role:'system',content:sys},{role:'user',content:prompt}]})});
   if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'Groq Fehler')}
   const d=await r.json();return d.choices?.[0]?.message?.content||'';
 }
@@ -1866,7 +1866,6 @@ async function execStep(step,res,msg,bcs){
       incStat('posts',1);return{type:'text',platform:step.platform||'Social',text:tx};
     }
     case'generate_image':{
-      if(!oKey())return{type:'image',error:'Kein OpenRouter Key',url:null};
       try{const imgs=await callORImg(`${step.imagePrompt||step.desc}. Photorealistic, professional marketing quality, high resolution.`);incStat('imgs',1);return{type:'image',url:imgs[0]||null}}
       catch(e){return{type:'image',error:e.message,url:null}}
     }
@@ -1922,12 +1921,9 @@ function renderWfOutput(plan,res,msg){
       <div class="pph"><div class="ppav">${nm[0]||'M'}</div><div><div class="ppnm">${nm}</div><div class="pppl">${plat}</div></div>
         <span style="margin-left:auto;font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;background:var(--ag);color:var(--a);border:1px solid rgba(200,241,53,.2)">${plat}</span></div>`;
     if(ir?.url){
-      html+=`<div class="ppimg"><img src="${ir.url}" alt="KI Bild">
-        <div class="ppbrand"><div><div class="ppbrand-nm">${nm}</div><div class="ppbrand-sl">${sl}</div></div>
-          <a href="${ir.url}" download="post.png" style="font-size:10px;font-weight:800;color:var(--a);text-decoration:none;background:var(--ag);padding:4px 9px;border-radius:100px;border:1px solid rgba(200,241,53,.2)">💾</a>
-        </div></div>`;
+      html+=`<div class="ppimg">${makeImgHtml(ir.url,'KI Post-Bild')}</div>`;
     }else if(ir?.error){
-      html+=`<div style="height:160px;background:var(--s2);display:flex;align-items:center;justify-content:center;gap:10px;flex-direction:column"><div style="font-size:28px;opacity:.3">🖼️</div><div style="font-size:12px;color:var(--mu)">${ir.error}</div><button class="bp" style="font-size:11px;padding:7px 13px" onclick="gp('pg-img')">🎨 Bild Studio</button></div>`;
+      html+=`<div style="height:120px;background:var(--s2);display:flex;align-items:center;justify-content:center;gap:10px;flex-direction:column"><div style="font-size:24px;opacity:.3">🖼️</div><div style="font-size:12px;color:var(--mu)">${ir.error}</div></div>`;
     }
     html+=`<div class="ppbody"><div class="ppcap">${capClean.replace(/</g,'&lt;')}</div>
       ${ht.length?`<div class="pphts">${ht.map(t=>`<span class="ppht" onclick="copyText('${t}')">${t}</span>`).join('')}</div>`:''}
@@ -2311,17 +2307,17 @@ async function genSocial(){
 // Generiert ein Bild inline in einen Container
 // Hilfsfunktion: Bild-HTML mit Spinner
 function makeImgHtml(url, label) {
-  const id = 'img-' + Math.random().toString(36).slice(2,7);
-  return `<div style="position:relative;background:var(--s2);border-radius:9px;overflow:hidden">
-    <div id="${id}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:1;pointer-events:none">
+  const id = 'sp-' + Math.random().toString(36).slice(2,8);
+  return `<div style="position:relative;background:var(--s2);border-radius:9px;overflow:hidden;min-height:80px">
+    <div id="${id}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;z-index:1">
       <div class="spin" style="width:20px;height:20px;border-width:3px;display:block!important;border-color:rgba(200,241,53,.15);border-top-color:var(--a)"></div>
-      <div style="font-size:10px;color:var(--mu)">Lädt…</div>
+      <div style="font-size:10px;color:var(--mu)">Generiert… (5-15s)</div>
     </div>
-    <img src="${url}" crossorigin="anonymous" style="width:100%;display:block;position:relative;z-index:2;min-height:60px"
-      onload="const s=document.getElementById('${id}');if(s)s.remove()"
-      onerror="const s=document.getElementById('${id}');if(s){s.innerHTML='<div style=font-size:11px;color:var(--mu);padding:16px>⚠️ Lädt noch… <a href=${url} target=_blank style=color:var(--a)>Direkt öffnen</a></div>'}"
+    <img src="${url}" style="width:100%;display:block;position:relative;z-index:2"
+      onload="var s=document.getElementById('${id}');if(s)s.style.display='none'"
+      onerror="var s=document.getElementById('${id}');if(s){s.innerHTML='<div style=\\'padding:12px;text-align:center\\'><div style=\\'font-size:11px;color:#9d9bba\\'>\u26a0\ufe0f Lädt noch...</div><a href=\\'${url}\\' target=\\'_blank\\' style=\\'font-size:11px;color:#c8f135\\'>Bild direkt öffnen \u2197</a></div>'}"
       alt="${label||'KI Bild'}">
-    <a href="${url}" target="_blank" download style="position:absolute;top:7px;right:7px;z-index:3;font-size:10px;font-weight:800;padding:4px 9px;background:rgba(4,4,12,.8);color:#fff;text-decoration:none;border-radius:6px;border:1px solid rgba(255,255,255,.15)">💾</a>
+    <a href="${url}" target="_blank" style="position:absolute;top:7px;right:7px;z-index:3;font-size:10px;font-weight:800;padding:4px 9px;background:rgba(4,4,12,.85);color:#fff;text-decoration:none;border-radius:6px">💾</a>
   </div>`;
 }
 
@@ -2514,7 +2510,7 @@ function updDash(){
 // ═══════════════════════════════════
 function init(){
   updStatus();ldBrand();renderPresets();updSaved();updStats();updDash();renderClients();renderCamps();populateCampClients();
-  if(!gKey()&&!oKey())setTimeout(()=>toast('⚙️ Bitte API Keys einrichten!'),1500);
+  if(!gKey())setTimeout(()=>toast('⚙️ Bitte API Keys einrichten!'),1500);
 }
 init();
 
@@ -3041,8 +3037,8 @@ async function runAutopilot(){
 
   const STEPS = [];
   if(tasks.find(t => t.includes('Kalender')))   STEPS.push({id:'cal',  icon:'📅', label:'Content-Kalender erstellen',   type:'calendar'});
-  if(tasks.find(t => t.includes('Posts')))      STEPS.push({id:'posts',icon:'📱', label:'5 Posts mit Captions',         type:'posts'});
-  if(tasks.find(t => t.includes('Bilder')))     STEPS.push({id:'imgs', icon:'🎨', label:'Marketing-Bilder generieren',  type:'images'});
+  if(tasks.find(t => t.includes('Posts')))      STEPS.push({id:'posts',icon:'📱', label:'5 Posts + Bilder generieren',  type:'posts'});
+  // Bilder werden jetzt pro Post in 'posts' generiert, kein separater Schritt nötig
   if(tasks.find(t => t.includes('Newsletter'))) STEPS.push({id:'mail', icon:'✉️', label:'Newsletter erstellen',         type:'email'});
   if(tasks.find(t => t.includes('Hashtags')))   STEPS.push({id:'ht',   icon:'#️⃣',label:'Hashtag-Sets generieren',      type:'hashtags'});
   if(tasks.find(t => t.includes('Report')))     STEPS.push({id:'rep',  icon:'📊', label:'Report-Vorlage erstellen',     type:'report'});
@@ -3087,40 +3083,64 @@ async function runAutopilot(){
 
 async function runAutopilotStep(step, ctx){
   const {month, theme, freq, plat, extra, fullCtx, cl} = ctx;
-  const base = `Monat: ${month} | Thema: ${theme||'allgemein'} | Plattform: ${plat} | ${cl?'Kunde: '+cl.name:'Eigenes Business'}${extra?' | Aktionen: '+extra:''}${fullCtx}`;
+  const clName = cl?.name || 'Eigenes Business';
+  const base = `Monat: ${month} | Thema: ${theme||'allgemein'} | Plattform: ${plat} | Kunde: ${clName}${extra?' | Aktionen: '+extra:''}${fullCtx}`;
 
   switch(step.type){
     case 'calendar': {
-      const raw = await callGroq(`Erstelle einen professionellen Content-Kalender für ${freq} Posts/Woche.\n${base}\nJSON:[{"day":"Mo 2. Jun","platform":"Instagram","topic":"...","format":"Bild","hook":"Erster Satz","hashtags":"#tag1 #tag2"}]`);
-      return { type:'calendar', plan: JSON.parse(raw.replace(/```json|```/g,'').trim()) };
+      const raw = await callGroq(
+        `Erstelle einen Content-Kalender für ${freq} Posts/Woche im Monat ${month}.\n${base}\n\nGib NUR ein JSON-Array zurück, nichts anderes:\n[{"day":"Mo 02.","platform":"${plat}","topic":"Konkretes spezifisches Thema","format":"Bild","hook":"Erster Satz"}]`,
+        'Antworte NUR mit einem JSON-Array. Kein Text davor oder danach. Kein Markdown.',
+        3000
+      );
+      let plan = [];
+      try {
+        const clean = raw.replace(/```json|```/g,'').trim();
+        const start = clean.indexOf('[');
+        const end   = clean.lastIndexOf(']');
+        if(start !== -1 && end !== -1) plan = JSON.parse(clean.slice(start, end+1));
+      } catch(e) {
+        const days = ['Mo','Di','Mi','Do','Fr'];
+        const weeks = 4;
+        const postsPerWeek = parseInt(freq) || 3;
+        for(let w=0; w<weeks; w++){
+          for(let d=0; d<postsPerWeek; d++){
+            const dayIdx = (w*postsPerWeek+d) % days.length;
+            const dayNr  = w*7 + d*2 + 1;
+            plan.push({day: days[dayIdx]+' '+(dayNr<10?'0':'')+dayNr+'.', platform:plat, topic:`${theme||'Content'} – Woche ${w+1} Post ${d+1}`, format:'Bild', hook:'Entdecke mehr...'});
+          }
+        }
+      }
+      return { type:'calendar', plan };
     }
+
     case 'posts': {
-      const raw = await callGroq(`Erstelle 5 verschiedene ${plat}-Posts mit vollständigen Captions.\n${base}\nFormat:\n[POST: 1 – Tag]\nCaption\n---\n[POST: 2 – Tag]\nCaption\n---\n(weiter bis 5)`);
+      const raw = await callGroq(
+        `Erstelle 5 verschiedene ${plat}-Posts für ${month}.\n${base}\n\nFür jeden Post: vollständige Caption UND einen SEHR SPEZIFISCHEN englischen Bildprompt der den Post-Inhalt visuell darstellt (z.B. nicht "office" sondern "software developer typing code on laptop screen showing AI assistant interface, modern home office, cinematic lighting").\n\nFormat exakt:\n[POST: 1]\nCAPTION: [vollständige Caption mit Emojis und Hashtags]\nBILD: [spezifischer englischer Bildprompt]\n---\n[POST: 2]\nCAPTION: ...\nBILD: ...\n---\n[POST: 3]\nCAPTION: ...\nBILD: ...\n---\n[POST: 4]\nCAPTION: ...\nBILD: ...\n---\n[POST: 5]\nCAPTION: ...\nBILD: ...`,
+        'Du bist ein Social-Media-Experte. Bildprompts müssen KONKRET und SPEZIFISCH zum Post-Inhalt sein, nicht generisch.',
+        4000
+      );
       incStat('posts', 5);
       return { type:'posts', raw };
     }
-    case 'images': {
-      if(!oKey()) return { type:'images', error:'Kein OpenRouter Key', urls:[] };
-      const promptRaw = await callGroq(`Generiere 1 präzisen englischen Bildprompt (photorealistic, marketing quality) für: ${theme||'business marketing'} ${cl?'für '+cl.name:''}. Nur den Prompt, keine Erklärung.`);
-      try {
-        const imgs = await callORImg(promptRaw.trim() + '. Photorealistic, professional marketing photography, high resolution.');
-        incStat('imgs', 1);
-        return { type:'images', urls: imgs, prompt: promptRaw };
-      } catch(e) { return { type:'images', error: e.message, urls:[] }; }
-    }
+
     case 'email': {
-      const raw = await callGroq(`Erstelle einen Newsletter für ${month}.\n${base}\nBETREFF: ...\nPREVIEW: ...\n---\nE-MAIL:\n[vollständiger Text]`);
+      const raw = await callGroq(`Erstelle einen Newsletter für ${month}.\n${base}\nBETREFF: ...\n---\nE-MAIL:\n[vollständiger Text]`);
       incStat('posts', 1);
-      const sub  = (raw.match(/BETREFF:\s*(.+)/)||[])[1]||'Newsletter '+month;
-      const body = (raw.match(/E-MAIL:\n([\s\S]+?)(?:---|$)/)||[])[1]||raw;
-      return { type:'email', subject: sub, body };
+      return {
+        type:'email',
+        subject: (raw.match(/BETREFF:\s*(.+)/)||[])[1]||'Newsletter '+month,
+        body:    (raw.match(/E-MAIL:\n([\s\S]+?)(?:---|$)/)||[])[1]||raw
+      };
     }
+
     case 'hashtags': {
-      const raw = await callGroq(`Erstelle 3 Hashtag-Sets für ${plat} zum Thema "${theme||'business'}" für ${month}.\n[SET: Reichweite]\n#tag...\n---\n[SET: Nische]\n...\n---\n[SET: Lokal]\n...\n---`);
+      const raw = await callGroq(`3 Hashtag-Sets für ${plat}, Thema: "${theme||'business'}".\n[SET: Reichweite]\n#tag...\n---\n[SET: Nische]\n...\n---\n[SET: Lokal]\n...\n---`);
       return { type:'hashtags', raw };
     }
+
     case 'report': {
-      const raw = await callGroq(`Erstelle eine professionelle Report-Vorlage für ${month} für ${cl?cl.name:'Eigenes Business'}.\nStruktur: Executive Summary, Social Media KPIs (Platzhalter), Content Performance, Empfehlungen für nächsten Monat.\nAuf Deutsch, professionell formatiert.`);
+      const raw = await callGroq(`Report-Vorlage für ${month} · ${clName}.\nStruktur: Executive Summary, KPIs, Content Performance, Empfehlungen.`);
       incStat('posts', 1);
       return { type:'report', raw };
     }
@@ -3136,150 +3156,134 @@ function renderAutopilotOutput(results, { month, theme, cl }){
       <div style="font-size:32px">🚀</div>
       <div>
         <div style="font-size:16px;font-weight:800;color:var(--tx)">${clName} · ${month} — Autopilot fertig!</div>
-        <div style="font-size:12px;color:var(--tx2);margin-top:3px">${Object.values(results).filter(r=>!r.error).length} von ${Object.keys(results).length} Modulen erfolgreich generiert.</div>
+        <div style="font-size:12px;color:var(--tx2);margin-top:3px">${Object.values(results).filter(r=>!r.error&&Object.keys(r).length>1).length} Module erfolgreich generiert.</div>
       </div>
-      <button class="bs" style="margin-left:auto;flex-shrink:0" onclick="exportAutopilot(${JSON.stringify(month).replace(/"/g,"'")},${JSON.stringify(clName).replace(/"/g,"'")})">📤 Alles exportieren</button>
+      <button class="bs" style="margin-left:auto;flex-shrink:0" onclick="exportAutopilot('${month.replace(/'/g,"\\'")}','${clName.replace(/'/g,"\\'")}')">📤 Export</button>
     </div>
-    <div style="display:grid;gap:12px">`;
+    <div style="display:grid;gap:14px">`;
 
-  // CALENDAR
-  if(results.cal?.plan){
+  // ── CALENDAR ──
+  if(results.cal?.plan?.length){
     const plan = results.cal.plan;
-    const planTxt = plan.map(p=>`${p.day} | ${p.platform} | ${p.topic}`).join('\n');
-    const pe = planTxt.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-    html += `<div class="rc" style="animation:ci .4s var(--ease)">
-      <div class="rh">
-        <span class="rt">📅 Content-Kalender · ${plan.length} Posts</span>
-        <div class="ra">
-          <button class="bg" onclick="copyText('${pe}')">📋</button>
-          <button class="bg" onclick="saveItem('Kalender ${month.replace(/'/g,"\\'")}','${pe}')">⭐</button>
-        </div>
+    const pe = plan.map(p=>`${p.day} | ${p.platform} | ${p.topic}`).join('\n').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+    html += `<div class="rc">
+      <div class="rh"><span class="rt">📅 Content-Kalender · ${plan.length} Posts</span>
+        <div class="ra"><button class="bg" onclick="copyText('${pe}')">📋</button><button class="bg" onclick="saveItem('Kalender ${month.replace(/'/g,"\\'")}','${pe}')">⭐</button></div>
       </div>
       <div style="overflow-x:auto"><table class="ctbl">
-        <thead><tr><th>Tag</th><th>Plattform</th><th>Thema</th><th>Format</th><th>Hook</th></tr></thead>
+        <thead><tr><th>Tag</th><th>Plattform</th><th>Thema</th><th>Hook</th></tr></thead>
         <tbody>${plan.map(p=>`<tr>
           <td style="color:var(--a);font-weight:800;white-space:nowrap">${p.day}</td>
           <td style="color:var(--d)">${p.platform}</td>
           <td>${p.topic}</td>
-          <td><span class="tag tag-vi" style="font-size:9px">${p.format}</span></td>
-          <td style="color:var(--tx2);font-style:italic;font-size:11px">${p.hook}</td>
+          <td style="color:var(--tx2);font-style:italic;font-size:11px">${p.hook||''}</td>
         </tr>`).join('')}</tbody>
       </table></div>
     </div>`;
   }
 
-  // POSTS
+  // ── POSTS MIT BILDERN (1 Bild pro Post) ──
   if(results.posts?.raw){
-    const blocks = results.posts.raw.split('---').filter(b=>b.trim());
-    html += `<div class="rc" style="animation:ci .4s .08s var(--ease) both">
-      <div class="rh"><span class="rt">📱 5 Posts · ${month}</span><div class="ra"><button class="bg" onclick="saveItem('Posts ${month.replace(/'/g,"\\'")}',${JSON.stringify(results.posts.raw).replace(/\\/g,'\\\\')})">⭐ Alle</button></div></div>
-      <div style="display:grid;gap:8px">`;
+    const blocks = results.posts.raw.split('---').filter(b => b.trim() && b.includes('[POST:'));
+    const postIds = [];
+
+    html += `<div class="rc">
+      <div class="rh"><span class="rt">📱 Posts · ${month}</span>
+        <div class="ra"><button class="bg" onclick="saveItem('Posts ${month.replace(/'/g,"\\'")}','${results.posts.raw.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').substring(0,500)}')">⭐ Alle</button></div>
+      </div>
+      <div style="display:grid;gap:10px">`;
+
     blocks.forEach((block, i) => {
-      const m = block.match(/\[POST:\s*(.+?)\]/);
-      if(!m) return;
-      const tx = block.replace(/\[POST:[^\]]+\]/,'').trim();
-      if(!tx) return;
-      const e = tx.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-      const te = m[1].trim().replace(/'/g,"\\'");
-      html += `<div style="background:var(--s2);border:1px solid var(--l);border-radius:9px;padding:11px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-          <span class="tag tag-li" style="font-size:9px">${m[1].trim()}</span>
-          <div class="ra">
-            <button class="bg" style="font-size:10px;padding:2px 7px" onclick="copyText('${e}')">📋</button>
-            <button class="bg" style="font-size:10px;padding:2px 7px" onclick="saveItem('Post: ${te}','${e}')">⭐</button>
-            <button class="bg" style="font-size:10px;padding:2px 7px" onclick="ge('fb-text').value='${e}';gp('pg-feedback');toast('Text in Feedback geladen')">🧠</button>
+      const headerM  = block.match(/\[POST:\s*(\d+)\]/);
+      if(!headerM) return;
+      const nr       = headerM[1];
+      const captionM  = block.match(/CAPTION:\s*\n?([\s\S]+?)(?=\nBILD:|$)/);
+      const bildM     = block.match(/BILD:\s*\n?(.+?)(?=\n\[POST:|$)/s);
+      const caption   = captionM ? captionM[1].trim() : block.replace(/\[POST:[^\]]+\]/,'').replace(/CAPTION:|BILD:[\s\S]*/gi,'').trim();
+      // Bildprompt: spezifisch aus Post-Inhalt, nie generisch
+      const rawPrompt = bildM ? bildM[1].trim() : '';
+      const bildPrompt = rawPrompt.length > 10
+        ? rawPrompt
+        : `${caption.substring(0,80).replace(/[^\w\s]/g,' ')} professional marketing photo, ${plat} post visual`;
+      const imgContId = `ap-post-img-${i}-${Date.now()}`;
+      postIds.push({ imgContId, bildPrompt });
+
+      const capE = caption.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+      html += `<div style="background:var(--s2);border:1px solid var(--l);border-radius:10px;overflow:hidden">
+        <div id="${imgContId}" style="background:var(--s3);min-height:80px;display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center;padding:12px">
+            <div class="spin" style="width:18px;height:18px;border-width:2px;display:block!important;border-color:rgba(200,241,53,.12);border-top-color:var(--a);margin:0 auto 5px"></div>
+            <div style="font-size:10px;color:var(--mu)">Bild wird generiert…</div>
           </div>
         </div>
-        <div style="font-size:12px;color:var(--tx2);line-height:1.65;white-space:pre-wrap">${tx}</div>
-      </div>`;
-    });
-    html += '</div></div>';
-  }
-
-  // IMAGES
-  if(results.imgs){
-    if(results.imgs.urls?.length){
-      html += `<div class="rc" style="animation:ci .4s .16s var(--ease) both">
-        <div class="rh"><span class="rt">🎨 Marketing-Bilder</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
-          ${results.imgs.urls.map(url => `
-            <div style="border-radius:10px;overflow:hidden;border:1px solid var(--l)">
-              <img src="${url}" style="width:100%;display:block" alt="KI Bild">
-              <div style="padding:8px;display:flex;justify-content:flex-end">
-                <a href="${url}" download="bild.png" class="bg" style="font-size:10px">💾</a>
-              </div>
-            </div>`).join('')}
+        <div style="padding:11px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+            <span class="tag tag-li" style="font-size:9px">Post ${nr}</span>
+            <div class="ra">
+              <button class="bg" style="font-size:10px;padding:2px 7px" onclick="copyText('${capE}')">📋</button>
+              <button class="bg" style="font-size:10px;padding:2px 7px" onclick="saveItem('Autopilot Post ${nr}','${capE}')">⭐</button>
+              <button class="bg" style="font-size:10px;padding:2px 7px" onclick="ge('fb-text').value='${capE}';gp('pg-feedback')">🧠</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.65;white-space:pre-wrap">${caption}</div>
+          <div style="margin-top:7px;font-size:10px;color:var(--mu);font-style:italic;padding:6px 8px;background:var(--bg1);border-radius:6px">🎨 ${bildPrompt.substring(0,80)}${bildPrompt.length>80?'…':''}</div>
         </div>
       </div>`;
-    } else if(results.imgs.error){
-      html += `<div class="rc" style="animation:ci .4s .16s var(--ease) both">
-        <div class="rh"><span class="rt">🎨 Bilder</span></div>
-        <div style="font-size:13px;color:var(--er)">❌ ${results.imgs.error} — <button class="bg" onclick="gp('pg-img')">Manuell generieren →</button></div>
-      </div>`;
-    }
+    });
+
+    html += '</div></div>';
+
+    // Bilder nach dem Rendern asynchron generieren
+    setTimeout(() => {
+      postIds.forEach(({imgContId, bildPrompt}) => {
+        genInlineImg(imgContId, bildPrompt + '. High quality, professional, specific to content.');
+      });
+    }, 100);
   }
 
-  // EMAIL
+  // ── EMAIL ──
   if(results.mail?.body){
     const se = results.mail.subject.replace(/'/g,"\\'");
     const be = results.mail.body.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-    html += `<div class="rc" style="animation:ci .4s .24s var(--ease) both">
-      <div class="rh">
-        <span class="rt">✉️ Newsletter · ${month}</span>
-        <div class="ra">
-          <button class="bg" onclick="copyText('${se}\\n\\n${be}')">📋</button>
-          <button class="bg" onclick="saveItem('Newsletter ${month.replace(/'/g,"\\'")}','${be}')">⭐</button>
-        </div>
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:9px;color:var(--mu);font-weight:800;letter-spacing:1px;margin-bottom:3px">BETREFF</div>
-        <div style="font-size:15px;font-weight:800">${results.mail.subject}</div>
-      </div>
-      <div class="ep"><p>${results.mail.body}</p></div>
-    </div>`;
+    html += `<div class="rc"><div class="rh"><span class="rt">✉️ Newsletter · ${month}</span>
+      <div class="ra"><button class="bg" onclick="copyText('${se}\\n\\n${be}')">📋</button><button class="bg" onclick="saveItem('Newsletter ${month.replace(/'/g,"\\'")}','${be}')">⭐</button></div></div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:10px">${results.mail.subject}</div>
+      <div class="ep"><p>${results.mail.body}</p></div></div>`;
   }
 
-  // HASHTAGS
+  // ── HASHTAGS ──
   if(results.ht?.raw){
-    const raw = results.ht.raw;
-    html += `<div class="rc" style="animation:ci .4s .3s var(--ease) both">
-      <div class="rh"><span class="rt">#️⃣ Hashtag-Sets · ${month}</span><div class="ra"><button class="bg" onclick="copyText(${JSON.stringify(raw.match(/#\S+/g)||[]).replace(/"/g,"'").slice(1,-1).split("','").map(t=>'#'+t.replace('#','')).join(' ')})">📋 Alle</button></div></div>
-      <div style="display:flex;flex-direction:column;gap:8px">`;
-    raw.split('---').filter(b=>b.trim()).forEach(block => {
-      const m = block.match(/\[SET:\s*(.+?)\]/); if(!m) return;
+    const sets = results.ht.raw.split('---').filter(b=>b.trim());
+    html += `<div class="rc"><div class="rh"><span class="rt">#️⃣ Hashtag-Sets</span></div><div style="display:flex;flex-direction:column;gap:8px">`;
+    sets.forEach(block => {
+      const m    = block.match(/\[SET:\s*(.+?)\]/); if(!m) return;
       const tags = (block.replace(/\[SET:[^\]]+\]/,'').match(/#\S+/g)||[]);
-      html += `<div><div style="font-size:10px;font-weight:800;color:var(--mu);margin-bottom:5px">${m[1].trim()}</div>
+      const all  = tags.join(' ').replace(/'/g,"\\'");
+      html += `<div><div style="font-size:10px;font-weight:800;color:var(--mu);margin-bottom:4px">${m[1].trim()}</div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">${tags.map(t=>`<span class="ht2" onclick="copyText('${t}')">${t}</span>`).join('')}</div></div>`;
     });
     html += '</div></div>';
   }
 
-  // REPORT TEMPLATE
+  // ── REPORT ──
   if(results.rep?.raw){
     const re = results.rep.raw.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
-    html += `<div class="rc" style="animation:ci .4s .36s var(--ease) both">
-      <div class="rh">
-        <span class="rt">📊 Report-Vorlage · ${month}</span>
-        <div class="ra">
-          <button class="bg" onclick="copyText('${re}')">📋</button>
-          <button class="bg" onclick="saveItem('Report ${month.replace(/'/g,"\\'")}','${re}')">⭐</button>
-        </div>
-      </div>
-      <div class="rb">${results.rep.raw.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</div>
-    </div>`;
+    html += `<div class="rc"><div class="rh"><span class="rt">📊 Report-Vorlage · ${month}</span>
+      <div class="ra"><button class="bg" onclick="copyText('${re}')">📋</button><button class="bg" onclick="saveItem('Report ${month.replace(/'/g,"\\'")}','${re}')">⭐</button></div></div>
+      <div class="rb">${results.rep.raw.replace(/\n/g,'<br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</div></div>`;
   }
 
   html += '</div></div>';
   out.innerHTML = html;
 
-  // Save all to schedule if calendar exists
-  if(results.cal?.plan){
+  // In Planer eintragen
+  if(results.cal?.plan?.length){
     results.cal.plan.forEach(p => {
-      schedule.push({ id:Date.now()+Math.random(), date:p.day, time:'09:00', platform:p.platform, caption:p.topic+'\n'+p.hook, clientId:cl?.id||null, clientName:clName, status:'planned' });
+      schedule.push({id:String(Date.now()+Math.random()),date:p.day,time:'09:00',platform:p.platform,caption:p.topic+(p.hook?'\n'+p.hook:''),clientId:cl?.id||null,clientName:clName,status:'planned'});
     });
     svLS('mma_sch', schedule);
     renderSchedule();
-    toast(`📅 ${results.cal.plan.length} Posts in den Planer eingetragen!`);
+    toast(`📅 ${results.cal.plan.length} Posts in Planer eingetragen!`);
   }
 }
 
@@ -3684,7 +3688,7 @@ fbAuth.onAuthStateChanged(async (user) => {
     await loadAllFromFirebase();
     startRealtimeListeners();
     updStatus();
-    if(!gKey()&&!oKey()) setTimeout(()=>toast('⚙️ Bitte API Keys einrichten!'),1500);
+    if(!gKey()) setTimeout(()=>toast('⚙️ Bitte API Keys einrichten!'),1500);
   } else {
     _uid = null;
     ge('auth-screen').style.display = 'flex';
