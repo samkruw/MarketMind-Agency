@@ -1765,10 +1765,18 @@ async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent 
 }
 
 async function callORImg(prompt){
-  // Pollinations.AI — 100% kostenlos, kein API Key nötig
-  const encoded = encodeURIComponent(prompt.substring(0, 500));
-  const seed    = Math.floor(Math.random() * 999999);
-  const url     = `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&model=flux&nologo=true&seed=${seed}`;
+  // Pollinations.AI — flux-realism für fotorealistische Ergebnisse
+  const seed = Math.floor(Math.random() * 999999);
+
+  // Negative-Keywords was vermieden werden soll
+  const negative = 'cartoon, illustration, drawing, painting, anime, sketch, low quality, blurry, ugly, deformed';
+
+  // Prompt mit Fotorealismus-Booster
+  const boosted = `${prompt}, RAW photo, DSLR, photorealistic, hyperrealistic, sharp focus, professional photography, 8k uhd, high resolution, realistic skin texture, natural lighting, bokeh`;
+  const encoded  = encodeURIComponent(boosted.substring(0, 700));
+  const negEnc   = encodeURIComponent(negative);
+
+  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&model=flux-realism&nologo=true&seed=${seed}&negative=${negEnc}`;
   return [url];
 }
 
@@ -2269,7 +2277,7 @@ async function genSocial(){
   try{
     // Bilder automatisch generieren (Pollinations.AI — kostenlos, kein Key nötig)
     const wantImg = true;
-    const imgInstr = wantImg ? '\nFüge am Ende jedes Posts eine Zeile hinzu: BILD: [kurzer englischer Bildprompt für Marketing-Foto]' : '';
+    const imgInstr = wantImg ? '\nFüge am Ende jedes Posts eine Zeile hinzu: BILD: [sehr spezifischer englischer Bildprompt: zeige die echte Situation/das echte Produkt/die echte Person aus dem Post, keine generischen Büro-Fotos, z.B. für Software: "close-up hands typing on mechanical keyboard, dark terminal with green code, VS Code open, professional programmer setup"]' : '';
     const raw=await callGroq(`Social Posts für: ${plats.join(', ')}\nMarke:${br} Thema:${tp} Ton:${tone}\n${vl('s-extra')||''}${bCtx()}${imgInstr}\n[POST: Plattform]\nText\n---`);
     let postNr = 0;
     raw.split('---').filter(b=>b.trim()).forEach((block,i)=>{
@@ -2292,9 +2300,8 @@ async function genSocial(){
         imgDiv.innerHTML = '<div style="font-size:11px;color:var(--mu);padding:12px">🎨 Bild wird generiert…</div>';
         card.insertBefore(imgDiv, card.querySelector('.rb'));
         ge('s-out').appendChild(card);
-        // Bild generieren
-        const prompt = (imgPrompt || `${tp} ${br} marketing photo, professional`);
-        genInlineImg(imgId, prompt);
+        // Caption-Text direkt übergeben → Groq generiert Bildprompt daraus
+        genInlineImg(imgId, tx);
       } else {
         ge('s-out').appendChild(card);
       }
@@ -2321,10 +2328,25 @@ function makeImgHtml(url, label) {
   </div>`;
 }
 
-async function genInlineImg(containerId, prompt) {
+// Generiert erst per Groq einen spezifischen Bildprompt aus dem Post-Text,
+// dann das Bild via Pollinations
+async function genInlineImg(containerId, postContent) {
   const el = ge(containerId); if(!el) return;
   try {
-    const imgs = await callORImg(prompt + '. Photorealistic, professional marketing photo.');
+    // Schritt 1: Groq generiert spezifischen Bildprompt aus Post-Inhalt
+    let imgPrompt = postContent;
+    if(gKey()) {
+      try {
+        imgPrompt = await callGroq(
+          `Erstelle einen präzisen englischen Bildprompt für diesen Social-Media-Post:\n\n"${postContent.substring(0,400)}"\n\nRegeln:\n- Beschreibe konkret was im Bild zu sehen ist (Personen, Objekte, Umgebung)\n- Keine generischen Büro-Fotos\n- Spezifisch zum Post-Inhalt passend\n- Nur den Prompt, keine Erklärung\n- Max 80 Wörter`,
+          'Du generierst Bildprompts für fotorealistische Fotos. Antworte NUR mit dem englischen Prompt, nichts sonst.',
+          200
+        );
+      } catch(e) { /* Fallback auf postContent */ }
+    }
+
+    // Schritt 2: Bild generieren
+    const imgs = await callORImg(imgPrompt);
     if(imgs[0]) {
       el.innerHTML = makeImgHtml(imgs[0], 'KI Bild');
       incStat('imgs', 1);
@@ -3116,12 +3138,22 @@ async function runAutopilotStep(step, ctx){
 
     case 'posts': {
       const raw = await callGroq(
-        `Erstelle 5 verschiedene ${plat}-Posts für ${month}.\n${base}\n\nFür jeden Post: vollständige Caption UND einen SEHR SPEZIFISCHEN englischen Bildprompt der den Post-Inhalt visuell darstellt (z.B. nicht "office" sondern "software developer typing code on laptop screen showing AI assistant interface, modern home office, cinematic lighting").\n\nFormat exakt:\n[POST: 1]\nCAPTION: [vollständige Caption mit Emojis und Hashtags]\nBILD: [spezifischer englischer Bildprompt]\n---\n[POST: 2]\nCAPTION: ...\nBILD: ...\n---\n[POST: 3]\nCAPTION: ...\nBILD: ...\n---\n[POST: 4]\nCAPTION: ...\nBILD: ...\n---\n[POST: 5]\nCAPTION: ...\nBILD: ...`,
-        'Du bist ein Social-Media-Experte. Bildprompts müssen KONKRET und SPEZIFISCH zum Post-Inhalt sein, nicht generisch.',
-        4000
+        `Erstelle 5 verschiedene ${plat}-Posts für ${month}.\n${base}\n\nGib NUR ein JSON-Array zurück:\n[{"nr":1,"caption":"Vollständige Caption mit Emojis und Hashtags"},{"nr":2,"caption":"..."},{"nr":3,"caption":"..."},{"nr":4,"caption":"..."},{"nr":5,"caption":"..."}]`,
+        'Antworte NUR mit einem JSON-Array. Kein Text, kein Markdown.',
+        3000
       );
       incStat('posts', 5);
-      return { type:'posts', raw };
+      // Parse JSON
+      let postsList = [];
+      try {
+        const clean = raw.replace(/```json|```/g,'').trim();
+        const start = clean.indexOf('['), end = clean.lastIndexOf(']');
+        if(start !== -1 && end !== -1) postsList = JSON.parse(clean.slice(start, end+1));
+      } catch(e) {
+        // Fallback: treat raw as single post
+        postsList = [{nr:1, caption: raw.substring(0,500), bild:`${theme||'marketing'} professional photo`}];
+      }
+      return { type:'posts', list: postsList };
     }
 
     case 'email': {
@@ -3183,62 +3215,53 @@ function renderAutopilotOutput(results, { month, theme, cl }){
   }
 
   // ── POSTS MIT BILDERN (1 Bild pro Post) ──
-  if(results.posts?.raw){
-    const blocks = results.posts.raw.split('---').filter(b => b.trim() && b.includes('[POST:'));
-    const postIds = [];
+  if(results.posts?.list?.length){
+    const postsList = results.posts.list;
+    const postIds   = [];
 
     html += `<div class="rc">
-      <div class="rh"><span class="rt">📱 Posts · ${month}</span>
-        <div class="ra"><button class="bg" onclick="saveItem('Posts ${month.replace(/'/g,"\\'")}','${results.posts.raw.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').substring(0,500)}')">⭐ Alle</button></div>
+      <div class="rh"><span class="rt">📱 ${postsList.length} Posts · ${month}</span>
+        <div class="ra"><button class="bg" onclick="saveItem('Posts ${month.replace(/'/g,"\\'")}','${postsList.map(p=>p.caption).join('\\n\\n---\\n\\n').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n').substring(0,600)}')">⭐ Alle</button></div>
       </div>
       <div style="display:grid;gap:10px">`;
 
-    blocks.forEach((block, i) => {
-      const headerM  = block.match(/\[POST:\s*(\d+)\]/);
-      if(!headerM) return;
-      const nr       = headerM[1];
-      const captionM  = block.match(/CAPTION:\s*\n?([\s\S]+?)(?=\nBILD:|$)/);
-      const bildM     = block.match(/BILD:\s*\n?(.+?)(?=\n\[POST:|$)/s);
-      const caption   = captionM ? captionM[1].trim() : block.replace(/\[POST:[^\]]+\]/,'').replace(/CAPTION:|BILD:[\s\S]*/gi,'').trim();
-      // Bildprompt: spezifisch aus Post-Inhalt, nie generisch
-      const rawPrompt = bildM ? bildM[1].trim() : '';
-      const bildPrompt = rawPrompt.length > 10
-        ? rawPrompt
-        : `${caption.substring(0,80).replace(/[^\w\s]/g,' ')} professional marketing photo, ${plat} post visual`;
-      const imgContId = `ap-post-img-${i}-${Date.now()}`;
-      postIds.push({ imgContId, bildPrompt });
+    postsList.forEach((p, i) => {
+      const caption    = p.caption || '';
+      const bildPrompt = p.bild || `${theme||'marketing'} ${clName} professional photo`;
+      const imgContId  = `ap-post-img-${i}-${Math.random().toString(36).slice(2,7)}`;
+      postIds.push({ imgContId, bildPrompt: caption }); // Caption-Text → Groq generiert Bildprompt daraus
 
       const capE = caption.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
       html += `<div style="background:var(--s2);border:1px solid var(--l);border-radius:10px;overflow:hidden">
-        <div id="${imgContId}" style="background:var(--s3);min-height:80px;display:flex;align-items:center;justify-content:center">
+        <div id="${imgContId}" style="background:var(--s3);height:180px;display:flex;align-items:center;justify-content:center">
           <div style="text-align:center;padding:12px">
-            <div class="spin" style="width:18px;height:18px;border-width:2px;display:block!important;border-color:rgba(200,241,53,.12);border-top-color:var(--a);margin:0 auto 5px"></div>
-            <div style="font-size:10px;color:var(--mu)">Bild wird generiert…</div>
+            <div class="spin" style="width:20px;height:20px;border-width:2px;display:block!important;border-color:rgba(200,241,53,.12);border-top-color:var(--a);margin:0 auto 6px"></div>
+            <div style="font-size:10px;color:var(--mu)">Bild lädt…</div>
           </div>
         </div>
-        <div style="padding:11px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-            <span class="tag tag-li" style="font-size:9px">Post ${nr}</span>
+        <div style="padding:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span class="tag tag-li" style="font-size:9px">Post ${p.nr || i+1} · ${plat}</span>
             <div class="ra">
               <button class="bg" style="font-size:10px;padding:2px 7px" onclick="copyText('${capE}')">📋</button>
-              <button class="bg" style="font-size:10px;padding:2px 7px" onclick="saveItem('Autopilot Post ${nr}','${capE}')">⭐</button>
+              <button class="bg" style="font-size:10px;padding:2px 7px" onclick="saveItem('Post ${p.nr||i+1}','${capE}')">⭐</button>
               <button class="bg" style="font-size:10px;padding:2px 7px" onclick="ge('fb-text').value='${capE}';gp('pg-feedback')">🧠</button>
             </div>
           </div>
-          <div style="font-size:12px;color:var(--tx2);line-height:1.65;white-space:pre-wrap">${caption}</div>
-          <div style="margin-top:7px;font-size:10px;color:var(--mu);font-style:italic;padding:6px 8px;background:var(--bg1);border-radius:6px">🎨 ${bildPrompt.substring(0,80)}${bildPrompt.length>80?'…':''}</div>
+          <div style="font-size:12px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">${caption}</div>
+          <div style="margin-top:8px;font-size:10px;color:var(--mu);font-style:italic;padding:6px 8px;background:var(--bg1);border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🎨 ${bildPrompt.substring(0,100)}</div>
         </div>
       </div>`;
     });
 
     html += '</div></div>';
 
-    // Bilder nach dem Rendern asynchron generieren
+    // Bilder asynchron nach dem DOM-Update generieren
     setTimeout(() => {
       postIds.forEach(({imgContId, bildPrompt}) => {
-        genInlineImg(imgContId, bildPrompt + '. High quality, professional, specific to content.');
+        genInlineImg(imgContId, bildPrompt);
       });
-    }, 100);
+    }, 200);
   }
 
   // ── EMAIL ──
@@ -3517,11 +3540,21 @@ function renderSerie(data, opts) {
 }
 
 // Generiert ein Bild für einen Serie-Post und zeigt es direkt an
-async function genImgForPost(nr, prompt) {
+async function genImgForPost(nr, postContent) {
   const container = ge(`sr-img-${nr}`);
   if (!container) return;
   try {
-    const imgs = await callORImg(prompt + '. Professional marketing photo, high quality.');
+    let imgPrompt = postContent;
+    if(gKey()) {
+      try {
+        imgPrompt = await callGroq(
+          `Erstelle einen präzisen englischen Bildprompt für diesen Post:\n\n"${postContent.substring(0,400)}"\n\nNur den Prompt, keine Erklärung. Konkret und spezifisch, max 80 Wörter.`,
+          'Du generierst Bildprompts. Antworte NUR mit dem englischen Prompt.',
+          200
+        );
+      } catch(e) { /* Fallback */ }
+    }
+    const imgs = await callORImg(imgPrompt);
     if (imgs[0]) {
       container.innerHTML = makeImgHtml(imgs[0], 'Post ' + nr);
       incStat('imgs', 1);
