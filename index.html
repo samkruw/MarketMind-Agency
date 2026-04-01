@@ -1764,19 +1764,12 @@ async function callGroq(prompt,sys='Du bist ein hilfreicher Marketing-Assistent 
   const d=await r.json();return d.choices?.[0]?.message?.content||'';
 }
 
-async function callORImg(prompt){
-  // Pollinations.AI — flux-realism für fotorealistische Ergebnisse
-  const seed = Math.floor(Math.random() * 999999);
-
-  // Negative-Keywords was vermieden werden soll
-  const negative = 'cartoon, illustration, drawing, painting, anime, sketch, low quality, blurry, ugly, deformed';
-
-  // Prompt mit Fotorealismus-Booster
-  const boosted = `${prompt}, RAW photo, DSLR, photorealistic, hyperrealistic, sharp focus, professional photography, 8k uhd, high resolution, realistic skin texture, natural lighting, bokeh`;
-  const encoded  = encodeURIComponent(boosted.substring(0, 700));
-  const negEnc   = encodeURIComponent(negative);
-
-  const url = `https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&model=flux-realism&nologo=true&seed=${seed}&negative=${negEnc}`;
+async function callORImg(englishPrompt){
+  // Pollinations.AI — flux-realism, kostenlos, kein Key nötig
+  const seed    = Math.floor(Math.random() * 999999);
+  const boosted = `${englishPrompt}, RAW photo, shot on Canon EOS R5, 85mm lens, f/1.8 aperture, photorealistic, hyperrealistic, 8k uhd, sharp focus, professional photography, cinematic lighting, ultra detailed`;
+  const negative = 'cartoon, illustration, drawing, anime, painting, sketch, CGI, render, low quality, blurry, ugly, deformed, text, watermark, logo';
+  const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(boosted.substring(0,700))}?width=1280&height=960&model=flux-realism&nologo=true&enhance=true&seed=${seed}&negative=${encodeURIComponent(negative)}`;
   return [url];
 }
 
@@ -2328,31 +2321,52 @@ function makeImgHtml(url, label) {
   </div>`;
 }
 
-// Generiert erst per Groq einen spezifischen Bildprompt aus dem Post-Text,
-// dann das Bild via Pollinations
+// Groq analysiert Post-Text → spezifischer englischer Foto-Prompt → Pollinations
 async function genInlineImg(containerId, postContent) {
-  const el = ge(containerId); if(!el) return;
+  const el = ge(containerId);
+  if(!el) return;
   try {
-    // Schritt 1: Groq generiert spezifischen Bildprompt aus Post-Inhalt
-    let imgPrompt = postContent;
-    if(gKey()) {
-      try {
-        imgPrompt = await callGroq(
-          `Erstelle einen präzisen englischen Bildprompt für diesen Social-Media-Post:\n\n"${postContent.substring(0,400)}"\n\nRegeln:\n- Beschreibe konkret was im Bild zu sehen ist (Personen, Objekte, Umgebung)\n- Keine generischen Büro-Fotos\n- Spezifisch zum Post-Inhalt passend\n- Nur den Prompt, keine Erklärung\n- Max 80 Wörter`,
-          'Du generierst Bildprompts für fotorealistische Fotos. Antworte NUR mit dem englischen Prompt, nichts sonst.',
-          200
-        );
-      } catch(e) { /* Fallback auf postContent */ }
+    let imgPrompt;
+    try {
+      imgPrompt = await callGroq(
+        `Task: Create an image prompt for this social media post.
+
+Post content:
+"${postContent.substring(0, 600)}"
+
+Rules for the image prompt:
+- If the post is about SOFTWARE, AI, APPS, TECHNOLOGY: show screens, interfaces, code, devices — NO random people
+- If the post is about a PRODUCT: show the product clearly
+- If the post is about a SERVICE: show the work being done
+- NEVER add people or women unless the post is explicitly about people
+- Be 100% specific to what the post is about
+- Write in English only
+- Max 40 words
+- Output ONLY the prompt text, nothing else
+
+Example for Claude AI post: "dark computer screen showing Claude AI chat interface with code suggestions, sleek modern UI, glowing text, developer workspace, close-up monitor shot"`,
+        'You write image prompts. Reply with ONLY the prompt, no intro, no explanation.',
+        120
+      );
+      // Cleanup
+      imgPrompt = imgPrompt
+        .replace(/^(here is|the prompt|image prompt|prompt:|photo:|sure[,!]?)/i,'')
+        .replace(/^["'\s]+|["'\s]+$/g,'')
+        .trim();
+      if(imgPrompt.length < 10) throw new Error('too short');
+    } catch(e) {
+      // Fallback: nimm ersten Satz des Posts als Basis
+      const first = postContent.split(/[.!?\n]/)[0].trim().substring(0, 80);
+      imgPrompt = `marketing visual for: ${first}, professional photo, product focused, no people`;
     }
 
-    // Schritt 2: Bild generieren
     const imgs = await callORImg(imgPrompt);
-    if(imgs[0]) {
+    if(imgs[0]){
       el.innerHTML = makeImgHtml(imgs[0], 'KI Bild');
       incStat('imgs', 1);
     }
   } catch(e) {
-    el.innerHTML = `<div style="font-size:10px;color:var(--mu);padding:8px;text-align:center">❌ ${e.message.substring(0,80)}</div>`;
+    el.innerHTML = `<div style="font-size:10px;color:var(--mu);padding:10px;text-align:center">❌ ${e.message.substring(0,80)}</div>`;
   }
 }
 
@@ -3544,15 +3558,19 @@ async function genImgForPost(nr, postContent) {
   const container = ge(`sr-img-${nr}`);
   if (!container) return;
   try {
-    let imgPrompt = postContent;
-    if(gKey()) {
-      try {
-        imgPrompt = await callGroq(
-          `Erstelle einen präzisen englischen Bildprompt für diesen Post:\n\n"${postContent.substring(0,400)}"\n\nNur den Prompt, keine Erklärung. Konkret und spezifisch, max 80 Wörter.`,
-          'Du generierst Bildprompts. Antworte NUR mit dem englischen Prompt.',
-          200
-        );
-      } catch(e) { /* Fallback */ }
+    // Gleiche Logik wie genInlineImg — Groq generiert spezifischen Prompt
+    let imgPrompt;
+    try {
+      imgPrompt = await callGroq(
+        `Task: Create an image prompt for this social media post.\n\nPost:\n"${postContent.substring(0,600)}"\n\nRules:\n- SOFTWARE/AI/TECH posts: show screens, interfaces, code, devices — NO random people\n- PRODUCT posts: show the product\n- SERVICE posts: show the work\n- NEVER add people unless the post is explicitly about people\n- Specific to post content, English only, max 40 words\n- Output ONLY the prompt`,
+        'You write image prompts. Reply with ONLY the prompt, no intro.',
+        120
+      );
+      imgPrompt = imgPrompt.replace(/^(here is|prompt:|photo:|sure[,!]?)/i,'').replace(/^["'\s]+|["'\s]+$/g,'').trim();
+      if(imgPrompt.length < 10) throw new Error('too short');
+    } catch(e) {
+      const first = postContent.split(/[.!?\n]/)[0].trim().substring(0, 80);
+      imgPrompt = `marketing visual for: ${first}, professional, product focused`;
     }
     const imgs = await callORImg(imgPrompt);
     if (imgs[0]) {
